@@ -47,3 +47,6 @@ def test_count_ngrams():
     assert model.unigramcounts[("the",)] == 61428
     assert model.bigramcounts[("START", "the")] == 5478
     assert model.trigramcounts[("START", "START", "the")] == 5478
+
+    breakpoint()
+    

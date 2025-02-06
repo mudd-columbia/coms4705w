@@ -35,7 +35,7 @@ def get_lexicon(corpus):
     return set(word for word in word_counts if word_counts[word] > 1)
 
 
-def get_ngrams(sequence: List[str], n: int):
+def get_ngrams(sequence: List[str], n: int) -> List[Tuple]:
     """
     COMPLETE THIS FUNCTION (PART 1)
     Given a sequence, this function should return a list of n-grams, where each n-gram is a Python tuple.
@@ -67,6 +67,8 @@ class TrigramModel(object):
         generator = corpus_reader(corpusfile, self.lexicon)
         self.count_ngrams(generator)
 
+        self.total_words = sum(self.unigramcounts.values())
+
     def count_ngrams(self, corpus):
         """
         COMPLETE THIS METHOD (PART 2)
@@ -83,21 +85,37 @@ class TrigramModel(object):
             self.bigramcounts.update(get_ngrams(sentence, 2))
             self.trigramcounts.update(get_ngrams(sentence, 3))
 
-    def raw_trigram_probability(self, trigram):
+    def raw_trigram_probability(self, trigram) -> float:
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) trigram probability
         """
+        if self.total_words > 0:
+            count_trigram = self.trigramcounts.get(trigram, 0)
+            count_prefix = self.bigramcounts.get((trigram[0], trigram[1]), 0)
+
+            if count_prefix == 0:
+                # 1 / |V| if unseen 
+                return float(1.0 / len(self.lexicon))
+            return count_trigram / count_prefix
         return 0.0
 
-    def raw_bigram_probability(self, bigram):
+    def raw_bigram_probability(self, bigram) -> float:
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) bigram probability
         """
+        if self.total_words > 0:
+            count_bigram = self.bigramcounts.get(bigram, 0)
+            count_prefix = self.unigramcounts.get((bigram[0],), 0)
+
+            if count_prefix == 0:
+                return 0.0
+            return count_bigram / count_prefix
+
         return 0.0
 
-    def raw_unigram_probability(self, unigram):
+    def raw_unigram_probability(self, unigram) -> float:
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) unigram probability.
@@ -106,7 +124,11 @@ class TrigramModel(object):
         # hint: recomputing the denominator every time the method is called
         # can be slow! You might want to compute the total number of words once,
         # store in the TrigramModel instance, and then re-use it.
+        if self.total_words > 0:
+            count = self.unigramcounts.get(unigram, 0)
+            return float(count / self.total_words)
         return 0.0
+
 
     def generate_sentence(self, t=20):
         """
@@ -116,15 +138,38 @@ class TrigramModel(object):
         """
         return result
 
-    def smoothed_trigram_probability(self, trigram):
+    def smoothed_trigram_probability(self, trigram: Tuple[str, str, str]) -> float:
         """
         COMPLETE THIS METHOD (PART 4)
         Returns the smoothed trigram probability (using linear interpolation).
+
+        The smoothed trigram probability is calculated using linear interpolation:
+        P(w | u, v) = λ1 * P_mle(w | u, v) + λ2 * P_mle(w | v) + λ3 * P_mle(w)
+
+        - λ1, λ2, λ3 are interpolation weights (e.g., λ1 = λ2 = λ3 = 1/3)
+        - P_mle(w | u, v) is the maximum likelihood estimate (MLE) of the trigram probability
+        - P_mle(w | v) is the MLE of the bigram probability
+        - P_mle(w) is the MLE of the unigram probability
+
         """
-        lambda1 = 1 / 3.0
-        lambda2 = 1 / 3.0
-        lambda3 = 1 / 3.0
-        return 0.0
+        lambda1 = 1 / 3.0 # unigram
+        lambda2 = 1 / 3.0 # bigram
+        lambda3 = 1 / 3.0 # trigram
+
+        u, w, v = trigram
+
+        trigram_prob = self.raw_trigram_probability((u, w, v))
+        bigram_prob = self.raw_bigram_probability((w, v))
+        unigram_prob = self.raw_unigram_probability((v,))
+
+        smoothed_prob = (
+            lambda1 * unigram_prob  +
+            lambda2 * bigram_prob +
+            lambda3 * trigram_prob
+        )
+
+        return smoothed_prob
+
 
     def sentence_logprob(self, sentence):
         """
