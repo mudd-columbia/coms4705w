@@ -1,31 +1,38 @@
-Part 1 - Extracting n-grams from a Sentence (20 pts)
+# Part 1 - Extracting n-grams from a Sentence (20 pts)
 Complete the function get_ngrams, which takes a list of strings and an integer n as input, and returns padded n-grams over the list of strings. The result should be a list of Python tuples. 
 
 For example: 
 
+```python3
 >>> get_ngrams(["natural","language","processing"],1)
 [('natural',), ('language',), ('processing',), ('STOP',)]
 >>> get_ngrams(["natural","language","processing"],2)
-('START', 'natural'), ('natural', 'language'), ('language', 'processing'), ('processing', 'STOP')]
+[('START', 'natural'), ('natural', 'language'), ('language', 'processing'), ('processing', 'STOP')]
 >>> get_ngrams(["natural","language","processing"],3)
 [('START', 'START', 'natural'), ('START', 'natural', 'language'), ('natural', 'language', 'processing'), ('language', 'processing', 'STOP')]
-Part 2 - Counting n-grams in a Corpus (15 pts)
+```
+
+
+# Part 2 - Counting n-grams in a Corpus (15 pts)
+
 We will work with two different data sets. The first data set is the Brown corpus, which is a sample of American written English collected in the 1950s. The format of the data is a plain text file brown_train.txt, containing one sentence per line. Each sentence has already been tokenized. For this assignment, no further preprocessing is necessary.
 
 Don't touch brown_test.txt yet. We will use this data to evaluate our language model later (by computing the perplexity on the test data).
 
-Reading the Corpus and Dealing with Unseen Words 
+## Reading the Corpus and Dealing with Unseen Words 
 
 This section has been implemented for you, but make sure you read through this section to understand the implementation. Take a look at the function corpus_reader in trigram_model.py. This function takes the name of a text file as an argument and returns a Python generator object. Generators allow you to iterate over a collection, one item at a time without ever having to represent the entire data set in a data structure (such as a list). This is a form of lazy evaluation. You could use this function as follows: 
-
+```python3
 >>> generator = corpus_reader("")
 >>> for sentence in generator:
-             print(sentence)
+        print(sentence)
+
 
 ['the', 'fulton', 'county', 'grand', 'jury', 'said', 'friday', 'an', 'investigation', 'of', 'atlanta', "'s", 'recent', 'primary', 'election', 'produced', '``', 'no', 'evidence', "''", 'that', 'any', 'irregularities', 'took', 'place', '.']
 ['the', 'jury', 'further', 'said', 'in', 'term-end', 'presentments', 'that', 'the', 'city', 'executive', 'committee', ',', 'which', 'had', 'over-all', 'charge', 'of', 'the', 'election', ',', '``', 'deserves', 'the', 'praise', 'and', 'thanks', 'of', 'the', 'city', 'of', 'atlanta', "''", 'for', 'the', 'manner', 'in', 'which', 'the', 'election', 'was', 'conducted', '.']
 ['the', 'september-october', 'term', 'jury', 'had', 'been', 'charged', 'by', 'fulton', 'superior', 'court', 'judge', 'durwood', 'pye', 'to', 'investigate', 'reports', 'of', 'possible', '``', 'irregularities', "''", 'in', 'the', 'hard-fought', 'primary', 'which', 'was', 'won', 'by', 'mayor-nominate', 'ivan', 'allen', 'jr', '&', '.']
-...
+```
+
 Each sentence is represented as a list of tokens. Note that iterating over this generator object works only once. After you are done, you need to create a new generator to do it again. 
 
 As discussed in class, there are two sources of data sparseness when working with language models: Completely unseen words and unseen contexts. One way to deal with unseen words is to use a pre-defined lexicon before we extract ngrams. The function corpus_reader has an optional parameter lexicon, which should be a Python set containing a list of tokens in the lexicon. All tokens that are not in the lexicon will be replaced with a special "UNK" token.

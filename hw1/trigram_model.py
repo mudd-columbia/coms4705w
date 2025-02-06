@@ -1,5 +1,5 @@
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 import math
 import random
 import os
@@ -74,13 +74,14 @@ class TrigramModel(object):
         and trigram counts.
         """
 
-        self.unigramcounts = {}  # might want to use defaultdict or Counter instead
-        self.bigramcounts = {}
-        self.trigramcounts = {}
+        self.unigramcounts = Counter()
+        self.bigramcounts = Counter()
+        self.trigramcounts = Counter()
 
-        ##Your code here
-
-        return
+        for sentence in corpus:
+            self.unigramcounts.update(get_ngrams(sentence, 1))
+            self.bigramcounts.update(get_ngrams(sentence, 2))
+            self.trigramcounts.update(get_ngrams(sentence, 3))
 
     def raw_trigram_probability(self, trigram):
         """
