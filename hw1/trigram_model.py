@@ -13,7 +13,8 @@ Daniel Bauer
 """
 
 BOS_TOKEN = "START"
-EOS_TOKEN = "END"
+EOS_TOKEN = "STOP"
+UNK_TOKEN = "UNK"
 
 
 def corpus_reader(corpusfile, lexicon=None):
@@ -22,7 +23,7 @@ def corpus_reader(corpusfile, lexicon=None):
             if line.strip():
                 sequence = line.lower().strip().split()
                 if lexicon:
-                    yield [word if word in lexicon else "UNK" for word in sequence]
+                    yield [word if word in lexicon else UNK_TOKEN for word in sequence]
                 else:
                     yield sequence
 
@@ -42,7 +43,7 @@ def get_ngrams(sequence: List[str], n: int) -> List[Tuple]:
     This should work for arbitrary values of n >= 1
     """
 
-    padded_sequence = ["START"] * (n - 1) + sequence + ["STOP"]
+    padded_sequence = [BOS_TOKEN] * (n - 1) + sequence + [EOS_TOKEN]
 
     ngrams = []
     for i in range(len(padded_sequence) - n + 1):
@@ -59,9 +60,9 @@ class TrigramModel(object):
         # Iterate through the corpus once to build a lexicon
         generator = corpus_reader(corpusfile)
         self.lexicon = get_lexicon(generator)
-        self.lexicon.add("UNK")
-        self.lexicon.add("START")
-        self.lexicon.add("STOP")
+        self.lexicon.add(UNK_TOKEN)
+        self.lexicon.add(BOS_TOKEN)
+        self.lexicon.add(EOS_TOKEN)
 
         # Now iterate through the corpus again and count ngrams
         generator = corpus_reader(corpusfile, self.lexicon)
@@ -95,7 +96,7 @@ class TrigramModel(object):
             count_prefix = self.bigramcounts.get((trigram[0], trigram[1]), 0)
 
             if count_prefix == 0:
-                # 1 / |V| if unseen 
+                # 1 / |V| if unseen
                 return float(1.0 / len(self.lexicon))
             return count_trigram / count_prefix
         return 0.0
@@ -129,32 +130,23 @@ class TrigramModel(object):
             return float(count / self.total_words)
         return 0.0
 
-
     def generate_sentence(self, t=20):
         """
         COMPLETE THIS METHOD (OPTIONAL)
         Generate a random sentence from the trigram model. t specifies the
         max length, but the sentence may be shorter if STOP is reached.
         """
-        return result
+        return NotImplementedError
+        # return result
 
     def smoothed_trigram_probability(self, trigram: Tuple[str, str, str]) -> float:
         """
         COMPLETE THIS METHOD (PART 4)
         Returns the smoothed trigram probability (using linear interpolation).
-
-        The smoothed trigram probability is calculated using linear interpolation:
-        P(w | u, v) = λ1 * P_mle(w | u, v) + λ2 * P_mle(w | v) + λ3 * P_mle(w)
-
-        - λ1, λ2, λ3 are interpolation weights (e.g., λ1 = λ2 = λ3 = 1/3)
-        - P_mle(w | u, v) is the maximum likelihood estimate (MLE) of the trigram probability
-        - P_mle(w | v) is the MLE of the bigram probability
-        - P_mle(w) is the MLE of the unigram probability
-
         """
-        lambda1 = 1 / 3.0 # unigram
-        lambda2 = 1 / 3.0 # bigram
-        lambda3 = 1 / 3.0 # trigram
+
+        # same lambda for all n_grams
+        n_gram_lambda = 1 / 3.0
 
         u, w, v = trigram
 
@@ -163,51 +155,79 @@ class TrigramModel(object):
         unigram_prob = self.raw_unigram_probability((v,))
 
         smoothed_prob = (
-            lambda1 * unigram_prob  +
-            lambda2 * bigram_prob +
-            lambda3 * trigram_prob
+            n_gram_lambda * unigram_prob
+            + n_gram_lambda * bigram_prob
+            + n_gram_lambda * trigram_prob
         )
 
         return smoothed_prob
-
 
     def sentence_logprob(self, sentence):
         """
         COMPLETE THIS METHOD (PART 5)
         Returns the log probability of an entire sequence.
         """
-        return float("-inf")
+        trigrams = get_ngrams(sentence, 3)
+
+        log_prob = 0.0
+
+        for trigram in trigrams:
+            prob = self.smoothed_trigram_probability(trigram)
+            assert prob > 0, "Probability is not greater than 0"
+
+            log_prob += math.log2(prob)
+
+        return log_prob
 
     def perplexity(self, corpus):
         """
         COMPLETE THIS METHOD (PART 6)
-        Returns the log probability of an entire sequence.
+        Calculates the perplexity of a corpus based on the language model.
         """
-        return float("inf")
+
+        running_sum_probability = 0.0  # l
+        counts = 0  # M
+
+        for sentence in corpus:
+            counts += len(sentence) + 1  # with EOS token
+            running_sum_probability += self.sentence_logprob(sentence)
+
+        avg_log_prob = running_sum_probability / counts
+        perplexity = 2 ** (-avg_log_prob)
+
+        return perplexity
 
 
 def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2):
 
+    def _get_correctness(model1, model2, testdir, expected_model):
+        correct = 0
+        total = 0
+
+        for f in os.listdir(testdir):
+            filepath = os.path.join(testdir, f)
+            pp1 = model1.perplexity(corpus_reader(filepath, model1.lexicon))
+            pp2 = model2.perplexity(corpus_reader(filepath, model2.lexicon))
+
+            total += 1
+            if (expected_model == 1 and pp1 < pp2) or (
+                expected_model == 2 and pp2 < pp1
+            ):
+                correct += 1
+
+        return correct, total
+
     model1 = TrigramModel(training_file1)
     model2 = TrigramModel(training_file2)
 
-    total = 0
-    correct = 0
+    correct1, total1 = _get_correctness(model1, model2, testdir1, expected_model=1)
+    correct2, total2 = _get_correctness(model1, model2, testdir2, expected_model=2)
 
-    for f in os.listdir(testdir1):
-        pp1 = model1.perplexity(
-            corpus_reader(os.path.join(testdir1, f), model1.lexicon)
-        )
-        pp2 = model2.perplexity(
-            corpus_reader(os.path.join(testdir1, f), model2.lexicon)
-        )
-        # ..
+    total = total1 + total2
+    correct = correct1 + correct2
 
-    for f in os.listdir(testdir2):
-        ...
-        # ..
-
-    return 0.0
+    assert total > 0, "No files in test directories."
+    return correct / total
 
 
 if __name__ == "__main__":
