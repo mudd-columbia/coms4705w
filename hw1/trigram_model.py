@@ -182,7 +182,7 @@ class TrigramModel(object):
     def perplexity(self, corpus):
         """
         COMPLETE THIS METHOD (PART 6)
-        Calculates the perplexity of a corpus based on the language model.
+        Returns the log probability of an entire sequence.
         """
 
         running_sum_probability = 0.0  # l
