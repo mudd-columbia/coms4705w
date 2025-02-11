@@ -48,5 +48,4 @@ def test_count_ngrams():
     assert model.bigramcounts[("START", "the")] == 5478
     assert model.trigramcounts[("START", "START", "the")] == 5478
 
-    breakpoint()
     

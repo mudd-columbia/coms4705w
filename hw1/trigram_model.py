@@ -242,11 +242,12 @@ if __name__ == "__main__":
     # you can then call methods on the model instance in the interactive
     # Python prompt.
 
-    # Testing perplexity:
+    # # Testing perplexity:
     # dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
-    # pp = model.perplexity(dev_corpus)
+    # pp = model.perplexity(dev_corpus) 
     # print(pp)
 
-    # Essay scoring experiment:
-    # acc = essay_scoring_experiment('train_high.txt', 'train_low.txt", "test_high", "test_low")
-    # print(acc)
+    # # Essay scoring experiment:
+    # path = "./hw1/hw1_data/ets_toefl_data/"
+    # acc = essay_scoring_experiment(path +"train_high.txt", path+"train_low.txt", path+ "test_high",  path+"test_low")
+    # print(acc) # 0.8366533864541833
