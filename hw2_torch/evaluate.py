@@ -78,3 +78,13 @@ if __name__ == "__main__":
     print("Micro Avg. Unlabeled Attachment Score: {}\n".format(uas_micro))
     print("Macro Avg. Labeled Attachment Score: {}".format(las_macro))
     print("Macro Avg. Unlabeled Attachment Score: {}".format(uas_macro))
+
+
+"""
+Micro Avg. Labeled Attachment Score: 0.7045181297314329
+Micro Avg. Unlabeled Attachment Score: 0.7609595117866056
+
+Macro Avg. Labeled Attachment Score: 0.7099515513363162
+Macro Avg. Unlabeled Attachment Score: 0.7681188077342752
+
+"""
