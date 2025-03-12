@@ -8,9 +8,11 @@ from torch.utils.data import Dataset, DataLoader
 
 from extract_training_data import FeatureExtractor
 
-device = "cpu"
+SEED = 42
+
+DEVCE = "cpu"
 if torch.cuda.is_available():
-    device = "cuda"
+    DEVICE = "cuda"
 
 
 class DependencyDataset(Dataset):
@@ -79,8 +81,8 @@ def train(model, loader):
 
         inputs, targets = batch
 
-        inputs = torch.LongTensor(inputs).to(device)
-        targets_tensor = torch.FloatTensor(targets).to(device)
+        inputs = torch.LongTensor(inputs).to(DEVICE)
+        targets_tensor = torch.FloatTensor(targets).to(DEVICE)
         targets_idx = torch.argmax(targets_tensor, dim=1)
 
         logits = model(torch.LongTensor(inputs))
@@ -112,6 +114,12 @@ def train(model, loader):
     print(f"Training loss epoch: {epoch_loss},   Accuracy: {acc}")
 
 
+def _set_dataloader_seed():
+    g = torch.Generator()
+    g.manual_seed(SEED)
+    return g
+
+
 if __name__ == "__main__":
 
     WORD_VOCAB_FILE = "data/words.vocab"
@@ -125,11 +133,17 @@ if __name__ == "__main__":
     extractor = FeatureExtractor(word_vocab_f)
 
     model = DependencyModel(len(extractor.word_vocab), len(extractor.output_labels)).to(
-        device
+        DEVICE
     )
 
     dataset = DependencyDataset(sys.argv[1], sys.argv[2])
-    loader = DataLoader(dataset, batch_size=16, shuffle=True)
+    loader = DataLoader(
+        dataset,
+        batch_size=16,
+        shuffle=True,
+        worker_init_fn=lambda _: np.random.seed(SEED),
+        generator=_set_dataloader_seed(),
+    )
 
     print("Done loading data")
 
