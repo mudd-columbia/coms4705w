@@ -174,5 +174,5 @@ cython_debug/
 .DS_Store
 
 **/hw1_data
-**/scratch**
-**/.*data
+**/scratch/
+**/data/
