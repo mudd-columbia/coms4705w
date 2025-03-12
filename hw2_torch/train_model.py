@@ -159,5 +159,7 @@ Current average loss: 4.542828559875488
 Current average loss: 0.6142518064033918
 Training loss epoch: 0.6137977921514869,   Accuracy: 0.8141392636767518
 ...
-
+Training loss epoch: 0.4571533832745658,   Accuracy: 0.8575913165385552
+...
+Training loss epoch: 0.3503251470411593,   Accuracy: 0.8892045828443937
 """
