@@ -175,3 +175,4 @@ cython_debug/
 
 **/hw1_data
 **/scratch**
+**/.*data
