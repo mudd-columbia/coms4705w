@@ -10,7 +10,7 @@ from extract_training_data import FeatureExtractor
 
 SEED = 42
 
-DEVCE = "cpu"
+DEVICE = "cpu"
 if torch.cuda.is_available():
     DEVICE = "cuda"
 

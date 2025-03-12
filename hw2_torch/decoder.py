@@ -31,9 +31,26 @@ class Parser(object):
         state = State(range(1, len(words)))
         state.stack.append(0)
 
-        # TODO: Write the body of this loop for part 5
         while state.buffer:
-            pass  # replace
+            feature = self.extractor.get_input_representation(words, pos, state)
+            feature = torch.LongTensor(feature).unsqueeze(0)  # torch.Size([1, 6])
+
+            log_probs = self.model(feature)  # torch.Size([1, 91])
+            probs = torch.exp(log_probs).detach().numpy()[0]  # (91,)
+
+            indices_sorted = np.argsort(-probs)
+            # breakpoint()
+
+            for idx in indices_sorted:
+                (trans, label) = self.output_labels[idx]  # ('shift', None)
+                if self.can_apply_transition(trans, state):
+                    if trans == "shift":
+                        state.shift()
+                    elif trans == "left_arc":
+                        state.left_arc(label)
+                    elif trans == "right_arc":
+                        state.right_arc(label)
+                    break
 
         result = DependencyStructure()
         for p, c, r in state.deps:
@@ -41,24 +58,39 @@ class Parser(object):
 
         return result
 
+    def can_apply_transition(self, transition, state):
+        if len(state.stack) == 0 and transition in ("left_arc", "right_arc"):
+            return False
+
+        if transition == "left_arc" and state.stack[-1] == 0:
+            return False
+
+        if transition == "shift":
+            if len(state.buffer) == 1 and len(state.stack) > 0:
+                return False
+
+        return True
+
 
 if __name__ == "__main__":
 
     WORD_VOCAB_FILE = "data/words.vocab"
-    POS_VOCAB_FILE = "data/pos.vocab"
+    # POS_VOCAB_FILE = "data/pos.vocab"
 
     try:
         word_vocab_f = open(WORD_VOCAB_FILE, "r")
-        pos_vocab_f = open(POS_VOCAB_FILE, "r")
+        # pos_vocab_f = open(POS_VOCAB_FILE, "r")
     except FileNotFoundError:
         print(
             "Could not find vocabulary files {} and {}".format(
-                WORD_VOCAB_FILE, POS_VOCAB_FILE
+                WORD_VOCAB_FILE,  # POS_VOCAB_FILE
             )
         )
         sys.exit(1)
 
-    extractor = FeatureExtractor(word_vocab_f, pos_vocab_f)
+    # extractor = FeatureExtractor(word_vocab_f, pos_vocab_f)
+    extractor = FeatureExtractor(word_vocab_f)
+
     parser = Parser(extractor, sys.argv[1])
 
     with open(sys.argv[2], "r") as in_file:

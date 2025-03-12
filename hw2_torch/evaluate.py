@@ -32,7 +32,9 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    extractor = FeatureExtractor(word_vocab_f, pos_vocab_f)
+    # extractor = FeatureExtractor(word_vocab_f, pos_vocab_f)
+    extractor = FeatureExtractor(word_vocab_f)
+
     parser = Parser(extractor, sys.argv[1])
 
     total_labeled_correct = 0
